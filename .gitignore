@@ -1,0 +1,14 @@
+/vendor/
+composer.lock
+.DS_Store
+.idea/
+*.log
+.env
+TASKS.md
+*_report.json
+PLAN.md
+*.sh
+guide.md
+*.ps1
+DELIVERY_REPORT.md
+AGENTS.md
