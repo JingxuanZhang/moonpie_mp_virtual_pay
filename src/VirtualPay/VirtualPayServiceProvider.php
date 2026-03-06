@@ -2,8 +2,6 @@
 
 namespace Moonpie\EasyWechat\VirtualPay;
 
-use Moonpie\EasyWechat\VirtualPay\Bill\Client as BillClient;
-use Moonpie\EasyWechat\VirtualPay\Withdraw\Client as WithdrawClient;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 
@@ -22,42 +20,39 @@ class VirtualPayServiceProvider implements ServiceProviderInterface
      */
     public function register(Container $app)
     {
-        // Verify that the container is a mini program application
-        if (!isset($app['mini_program'])) {
-            throw new \RuntimeException('The container must be a mini program application.');
-        }
 
         // Register virtual pay clients
         $app['virtual_pay_balance'] = function ($app) {
-            return new BasicClient($app, '/xpay/query_user_balance');
+            return new Balance\Client($app);
         };
 
         $app['virtual_pay_order'] = function ($app) {
-            return new BasicClient($app, '/xpay/currency_pay');
+            return new Order\Client($app);
         };
 
         $app['virtual_pay_currency'] = function ($app) {
-            return new BasicClient($app, '/xpay/cancel_currency_pay');
+            return new Currency\Client($app);
         };
 
         $app['virtual_pay_goods'] = function ($app) {
-            return new BasicClient($app, '/xpay/goods');
+            return new Goods\Client($app);
         };
 
         $app['virtual_pay_withdraw'] = function ($app) {
-            return new WithdrawClient($app);
+            return new Withdraw\Client($app);
         };
 
         $app['virtual_pay_fund'] = function ($app) {
-            return new BasicClient($app, '/xpay/fund');
+            return new Fund\Client($app);
         };
 
         $app['virtual_pay_complaint'] = function ($app) {
-            return new BasicClient($app, '/xpay/complaint');
+            return new Complaint\Client($app);
         };
 
         $app['virtual_pay_bill'] = function ($app) {
-            return new BillClient($app);
+            return new Bill\Client($app);
         };
     }
 }
+

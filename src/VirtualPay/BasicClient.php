@@ -39,20 +39,8 @@ class BasicClient extends BaseClient
         if ($params !== null && isset($params['env'])) {
             return (int) $params['env'];
         }
-        
-        return (int) $this->app['config']['virtual_pay']['env'] ?? 0;
-    }
 
-    /**
-     * Constructor.
-     *
-     * @param ServiceContainer $app
-     * @param \EasyWeChat\Kernel\Contracts\AccessTokenInterface|null $accessToken
-     */
-    public function __construct(ServiceContainer $app, $accessToken = null)
-    {
-        parent::__construct($app, $accessToken);
-        $this->uri = $this->app['config']['http']['base_uri'] ?? '';
+        return (int) $this->app->config->get('virtual_pay.env', 0);
     }
 
     /**
@@ -67,11 +55,11 @@ class BasicClient extends BaseClient
     public function request(string $url, string $method = 'GET', array $options = [], $returnRaw = false)
     {
         // Get appKey from config
-        $appKey = $this->app['config']['app_key'] ?? '';
+        $appKey = $this->getEnvAppKey();
 
         // Extract URI path (without query string)
         $uriPath = parse_url($url, PHP_URL_PATH) ?: $url;
-        
+
         // Parse existing query parameters from the URL
         $existingQuery = [];
         $parsedUrl = parse_url($url);
@@ -81,8 +69,8 @@ class BasicClient extends BaseClient
 
         // Get post body and extract env from it
         $postBody = '';
-        $env = $this->app['config']['virtual_pay']['env'] ?? 0; // default env
-        
+        $env = $this->getEnv();
+
         if (isset($options['body'])) {
             $postBody = $options['body'];
         } elseif (isset($options['json'])) {
@@ -109,7 +97,8 @@ class BasicClient extends BaseClient
         // Merge existing query parameters with new ones
         $options['query'] = array_merge($existingQuery, $options['query']);
         $options['query']['pay_sig'] = $paySig;
-        $options['query']['env'] = $env;
+        //query不需要env
+        //$options['query']['env'] = $env;
 
         // Check if user signature is needed
         $needsUserSignature = false;
@@ -202,75 +191,38 @@ class BasicClient extends BaseClient
 
         return $this->request($url, 'POST', $options);
     }
-    
+
     /**
      * Override to prevent middleware registration during testing
      */
     protected function registerHttpMiddlewares()
     {
-        // Do nothing to prevent automatic middleware registration that might trigger HTTP requests
+        parent::registerHttpMiddlewares();
     }
-    
-    /**
-     * Override to ensure the correct HTTP client is used
-     */
-    public function getHttpClient(): \GuzzleHttp\ClientInterface
+    protected function getEnvAppKey()
     {
-        if (!($this->httpClient instanceof \GuzzleHttp\ClientInterface)) {
-            if (property_exists($this, 'app') && isset($this->app['http_client'])) {
-                $this->httpClient = $this->app['http_client'];
-            } else {
-                $this->httpClient = new \GuzzleHttp\Client();
-            }
+        $sandbox = $this->getEnv();
+        if ($sandbox) {
+            return $this->app->config->get('virtual_pay.sandbox_app_key', '');
         }
-
-        return $this->httpClient;
+        return $this->app->config->get('virtual_pay.app_key', '');
     }
-    
     /**
-     * Override to ensure the correct handler stack is used
+     * 生成wxapi需要的虚拟支付必要参数
+     * @link https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestVirtualPayment.html
      */
-    public function getHandlerStack(): \GuzzleHttp\HandlerStack
+    public function buildVirtualPayData(array $signData, $mode, $sessionKey)
     {
-        if ($this->handlerStack) {
-            return $this->handlerStack;
-        }
+        $json = [
+            'signData' => $signData,
+            'mode' => $mode,
+        ];
+        $uriWxApi = 'requestVirtualPayment';
+        $postBody = json_encode($signData);
+        $appKey = $this->getEnvAppKey($signData);
+        $json['pigSign'] = $this->generatePaySig($uriWxApi, $postBody, $appKey);
+        $json['signature'] = $this->generateSignature($postBody, $sessionKey);
 
-        $this->handlerStack = \GuzzleHttp\HandlerStack::create($this->getGuzzleHandler());
-
-        foreach ($this->middlewares as $name => $middleware) {
-            $this->handlerStack->push($middleware, $name);
-        }
-
-        return $this->handlerStack;
-    }
-    
-    /**
-     * Override to return the mock handler from the app container
-     */
-    protected function getGuzzleHandler()
-    {
-        // Check if we have a mock handler in the app container
-        if (property_exists($this, 'app') && isset($this->app['http_client'])) {
-            $httpClient = $this->app['http_client'];
-            // If the http client has a mock handler, use it
-            if ($httpClient instanceof \GuzzleHttp\Client) {
-                $handlerStack = $httpClient->getConfig('handler');
-                if ($handlerStack instanceof \GuzzleHttp\HandlerStack) {
-                    // Extract the handler from the stack
-                    $coreHandler = $handlerStack->resolve();
-                    return $coreHandler;
-                }
-            }
-        }
-        
-        // Fallback to default behavior
-        if (property_exists($this, 'app') && isset($this->app['guzzle_handler'])) {
-            return is_string($handler = $this->app->raw('guzzle_handler'))
-                        ? new $handler()
-                        : $handler;
-        }
-
-        return \GuzzleHttp\choose_handler();
+        return $json;
     }
 }
