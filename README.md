@@ -12,6 +12,7 @@ composer require moonpie/mp-virtual-pay
 ## 配置
 ```php
 use EasyWeChat\MiniProgram\Application;
+use Moonpie\EasyWechat\VirtualPay\VirtualPayServiceProvider;
 
 $config = [
     'app_id' => 'wx-app-id',
@@ -20,6 +21,7 @@ $config = [
     
     // 虚拟支付配置
     'virtual_pay' => [
+        'offer_id' => 'your offer id',
         'app_key' => 'your-prod-app-key',
         'sandbox_app_key' => 'your-sandbox-app-key',
         'env' => 0, // 0-正式环境 1-沙箱环境
@@ -27,7 +29,7 @@ $config = [
 ];
 
 $miniProgram = new Application($config);
-$miniProgram->register(new \Moonpie\EasyWechat\VirtualPay\VirtualPayServiceProvider());
+$miniProgram->register(new VirtualPayServiceProvider());
 ```
 
 ### 使用示例
@@ -99,6 +101,7 @@ $virtualPayData = $miniProgram->virtual_pay_order->buildVirtualPayData($signData
 - `queryBizBalance()` - 查询商家账户余额
 
 ### Order（订单管理）
+- `buildVirtualPayData($signData, $mode, $sessionKey)` - 生成wx.requestVirtualPayment需要的支付信息(下单);
 - `queryOrder($orderId, $openid, $env)` - 查询订单
 - `notifyProvideGoods($orderId, $wxOrderId, $env)` - 通知发货
 - `refundOrder($params)` - 订单退款
