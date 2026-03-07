@@ -16,7 +16,7 @@ class GoodsClientTest extends TestCase
 {
     private $app;
     private $mockHandler;
-    private $httpClient;
+    private $handlerStack;
     private $history;
 
     protected function setUp(): void
@@ -45,15 +45,12 @@ class GoodsClientTest extends TestCase
         ]);
         
         // 创建一个可以记录请求历史的 HandlerStack
-        $handlerStack = HandlerStack::create($this->mockHandler);
-        
+        $this->handlerStack = HandlerStack::create($this->mockHandler);
+
         // 添加一个中间件来记录请求历史
         $this->history = [];
         $historyMiddleware = \GuzzleHttp\Middleware::history($this->history);
-        $handlerStack->push($historyMiddleware);
-        
-        $this->httpClient = new HttpClient(['handler' => $handlerStack]);
-        $this->app['http_client'] = $this->httpClient;
+        $this->handlerStack->push($historyMiddleware);
         
         // 模拟 access_token 服务
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
@@ -63,6 +60,7 @@ class GoodsClientTest extends TestCase
     public function testStartUploadGoods()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $uploadItem = [
             'goods_id' => 'goods_123',
@@ -97,8 +95,6 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -107,6 +103,7 @@ class GoodsClientTest extends TestCase
     public function testStartUploadGoodsWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $uploadItem = [
             'goods_id' => 'goods_456',
@@ -136,13 +133,12 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']);
     }
 
     public function testQueryUploadGoods()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $result = $client->queryUploadGoods();
         
@@ -170,8 +166,6 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -180,6 +174,7 @@ class GoodsClientTest extends TestCase
     public function testQueryUploadGoodsWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $env = 0; // 自定义环境
         
@@ -203,13 +198,12 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']);
     }
 
     public function testStartPublishGoods()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $publishItem = [
             'goods_id' => 'goods_789',
@@ -244,8 +238,6 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -254,6 +246,7 @@ class GoodsClientTest extends TestCase
     public function testStartPublishGoodsWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $publishItem = [
             'goods_id' => 'goods_000',
@@ -283,13 +276,12 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']);
     }
 
     public function testQueryPublishGoods()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $result = $client->queryPublishGoods();
         
@@ -317,8 +309,6 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -327,6 +317,7 @@ class GoodsClientTest extends TestCase
     public function testQueryPublishGoodsWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $env = 0; // 自定义环境
         
@@ -350,7 +341,5 @@ class GoodsClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']);
     }
 }

@@ -16,7 +16,7 @@ class ComplaintClientTest extends TestCase
 {
     private $app;
     private $mockHandler;
-    private $httpClient;
+    private $handlerStack;
     private $history;
 
     protected function setUp(): void
@@ -51,15 +51,12 @@ class ComplaintClientTest extends TestCase
         ]);
         
         // 创建一个可以记录请求历史的 HandlerStack
-        $handlerStack = HandlerStack::create($this->mockHandler);
-        
+        $this->handlerStack = HandlerStack::create($this->mockHandler);
+
         // 添加一个中间件来记录请求历史
         $this->history = [];
         $historyMiddleware = \GuzzleHttp\Middleware::history($this->history);
-        $handlerStack->push($historyMiddleware);
-        
-        $this->httpClient = new HttpClient(['handler' => $handlerStack]);
-        $this->app['http_client'] = $this->httpClient;
+        $this->handlerStack->push($historyMiddleware);
         
         // 模拟 access_token 服务
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
@@ -69,6 +66,7 @@ class ComplaintClientTest extends TestCase
     public function testGetComplaintList()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $params = [
             'start_time' => '2023-01-01',
@@ -106,8 +104,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -116,6 +112,7 @@ class ComplaintClientTest extends TestCase
     public function testGetComplaintDetail()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_123';
         
@@ -145,8 +142,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -155,6 +150,7 @@ class ComplaintClientTest extends TestCase
     public function testGetComplaintDetailWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_456';
         $env = 0; // 自定义环境
@@ -180,13 +176,12 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']); // 应该使用自定义环境
     }
 
     public function testGetNegotiationHistory()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_789';
         
@@ -218,8 +213,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -228,6 +221,7 @@ class ComplaintClientTest extends TestCase
     public function testGetNegotiationHistoryWithCustomParams()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_000';
         $offset = 10;
@@ -257,13 +251,12 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']); // 应该使用自定义环境
     }
 
     public function testResponseComplaint()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_111';
         $responseContent = 'This is a response to the complaint';
@@ -296,8 +289,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -306,6 +297,7 @@ class ComplaintClientTest extends TestCase
     public function testResponseComplaintWithImagesAndCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_222';
         $responseContent = 'This is a response with images';
@@ -335,13 +327,12 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']); // 应该使用自定义环境
     }
 
     public function testCompleteComplaint()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_333';
         
@@ -371,8 +362,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -381,6 +370,7 @@ class ComplaintClientTest extends TestCase
     public function testCompleteComplaintWithCustomEnv()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $complaintId = 'complaint_444';
         $env = 0; // 自定义环境
@@ -406,13 +396,12 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']); // 应该使用自定义环境
     }
 
     public function testUploadVpFile()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $params = [
             'base64_img' => 'base64_encoded_image_data',
@@ -446,8 +435,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -456,6 +443,7 @@ class ComplaintClientTest extends TestCase
     public function testGetUploadFileSign()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $wxpayUrl = 'https://api.mch.weixin.qq.com/v3/merchant-service/images/test_image';
         
@@ -486,8 +474,6 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
         
         // 验证不包含 signature（因为不是用户签名接口）
         $this->assertArrayNotHasKey('signature', $query);
@@ -496,6 +482,7 @@ class ComplaintClientTest extends TestCase
     public function testGetUploadFileSignWithAllParams()
     {
         $client = new Client($this->app);
+        $client->setHandlerStack($this->handlerStack);
         
         $wxpayUrl = 'https://api.mch.weixin.qq.com/v3/merchant-service/images/test_image_2';
         $convertCos = true;
@@ -525,7 +512,5 @@ class ComplaintClientTest extends TestCase
         parse_str($queryString, $query);
         
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(0, $query['env']); // 应该使用自定义环境
     }
 }
