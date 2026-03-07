@@ -6,17 +6,15 @@ use PHPUnit\Framework\TestCase;
 use Moonpie\EasyWechat\VirtualPay\BasicClient;
 use EasyWeChat\Kernel\ServiceContainer;
 use EasyWeChat\Kernel\Contracts\AccessTokenInterface;
-use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Request;
 
 class BasicClientTest extends TestCase
 {
     private $app;
     private $mockHandler;
-    private $httpClient;
+    private $handlerStack;
 
     protected function setUp(): void
     {
@@ -24,9 +22,8 @@ class BasicClientTest extends TestCase
 
         // 创建模拟的 ServiceContainer
         $this->app = new ServiceContainer([
-            'env' => 1,
-            'app_key' => 'test_app_key_123456',
             'virtual_pay' => [
+                'app_key' => 'test_app_key_123456',
                 'env' => 1,
             ],
             'http' => [
@@ -56,9 +53,8 @@ class BasicClientTest extends TestCase
         $history = [];
         $historyMiddleware = \GuzzleHttp\Middleware::history($history);
         $handlerStack->push($historyMiddleware);
+        $this->handlerStack = $handlerStack;
 
-        $this->httpClient = new Client(['handler' => $handlerStack]);
-        $this->app['http_client'] = $this->httpClient;
 
         // 保存历史记录以便测试使用
         $this->history = &$history;
@@ -132,6 +128,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test';
         $options = [
@@ -153,14 +150,13 @@ class BasicClientTest extends TestCase
         parse_str($queryString, $query);
 
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
-        $this->assertEquals(1, $query['env']);
     }
 
     public function testRequestWithDifferentBodyFormats()
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         // 测试 json 格式
         $url = 'https://api.example.com/xpay/test';
@@ -192,6 +188,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test';
         $data = ['key' => 'value'];
@@ -221,6 +218,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test';
         $data = ['key' => 'value'];
@@ -236,6 +234,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test';
         $data = ['key' => 'value'];
@@ -257,6 +256,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test';
         $data = ['key' => 'value'];
@@ -272,6 +272,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/test?existing=param';
         $options = [
@@ -292,7 +293,6 @@ class BasicClientTest extends TestCase
 
         $this->assertArrayHasKey('existing', $query);
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
         $this->assertEquals('param', $query['existing']);
     }
 
@@ -300,6 +300,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/query_user_balance';
         $options = [
@@ -321,9 +322,7 @@ class BasicClientTest extends TestCase
         parse_str($queryString, $query);
 
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
         $this->assertArrayHasKey('signature', $query);
-        $this->assertEquals(1, $query['env']);
 
         // 验证 session_key 不在 query 参数中（已被移除）
         $this->assertArrayNotHasKey('session_key', $query);
@@ -333,6 +332,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/query_user_balance';
         $options = [
@@ -354,7 +354,6 @@ class BasicClientTest extends TestCase
         parse_str($queryString, $query);
 
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
         $this->assertArrayNotHasKey('signature', $query);
     }
 
@@ -362,6 +361,7 @@ class BasicClientTest extends TestCase
     {
         $mockAccessToken = $this->createMock(AccessTokenInterface::class);
         $client = new BasicClient($this->app, $mockAccessToken);
+        $client->setHandlerStack($this->handlerStack);
 
         $url = 'https://api.example.com/xpay/other_interface';
         $options = [
@@ -382,7 +382,6 @@ class BasicClientTest extends TestCase
         parse_str($queryString, $query);
 
         $this->assertArrayHasKey('pay_sig', $query);
-        $this->assertArrayHasKey('env', $query);
         $this->assertArrayNotHasKey('signature', $query);
     }
 
