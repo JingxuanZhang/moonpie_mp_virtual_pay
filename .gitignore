@@ -12,3 +12,5 @@ guide.md
 *.ps1
 DELIVERY_REPORT.md
 AGENTS.md
+RealTest.php
+docs

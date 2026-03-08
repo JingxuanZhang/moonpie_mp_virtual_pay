@@ -20,8 +20,8 @@ class Client extends BasicClient
      */
     public function currencyPay($params, $sessionKey)
     {
-        $env = isset($params['env']) ? (int) $params['env'] : (int) $this->app['config']['virtual_pay']['env'] ?? 0;
-        
+        $env = $this->getEnv($params);
+
         $data = [
             'openid' => Arr::get($params, 'openid'),
             'env' => $env,
@@ -31,14 +31,14 @@ class Client extends BasicClient
             'payitem' => Arr::get($params, 'payitem'),
             'remark' => Arr::get($params, 'remark', ''),
         ];
-        
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/currency_pay',
             $data,
             [],
             $sessionKey
         );
-        
+
         return $response;
     }
 
@@ -52,7 +52,7 @@ class Client extends BasicClient
     public function cancelCurrencyPay($params, $sessionKey)
     {
         $env = $this->getEnv($params);
-        
+
         $data = [
             'openid' => Arr::get($params, 'openid'),
             'env' => $env,
@@ -61,14 +61,14 @@ class Client extends BasicClient
             'order_id' => Arr::get($params, 'order_id'),
             'amount' => Arr::get($params, 'amount'),
         ];
-        
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/cancel_currency_pay',
             $data,
             [],
             $sessionKey
         );
-        
+
         return $response;
     }
 
@@ -81,19 +81,20 @@ class Client extends BasicClient
     public function presentCurrency($params)
     {
         $env = $this->getEnv($params);
-        
+
         $data = [
             'openid' => Arr::get($params, 'openid'),
             'env' => $env,
             'order_id' => Arr::get($params, 'order_id'),
             'amount' => Arr::get($params, 'amount'),
         ];
-        
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/present_currency',
             $data
         );
-        
+
         return $response;
     }
 }
+
