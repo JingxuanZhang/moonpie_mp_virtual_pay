@@ -90,6 +90,20 @@ $signData = [
 ];
 $mode = 'short_series_goods';//可选项short_series_goods	道具直购|short_series_coin	代币充值
 $virtualPayData = $miniProgram->virtual_pay_order->buildVirtualPayData($signData, $mode, $sessionKey);
+
+// 8. 消息通知回调
+//添加统一的消息监听器
+use EasyWeChat\Kernel\Messages\Message;
+$dispatcher = $app->event_dispatcher;
+$dispatcher->addListener('xpay_goods_deliver_notify', callable(Event\GoodsDeliveredEvent $event));//道具发货推送
+$dispatcher->addListener('xpay_coin_pay_notify', callable(Event\CoinPaidEvent $event));//代币支付推送
+$dispatcher->addListener('xpay_refund_notify', callable(Event\RefundProcessedEvent $event));//退款推送
+$dispatcher->addListener('xpay_complaint_notify', callable(Event\ComplaintFiledEvent $event));//用户投诉推送
+$handler = new Moonpie\EasyWechat\VirtualPay\Server\VirtualPayEventHandler($dispatcher);
+$app->server->push($handler, Message::EVENT);
+$response = $app->server->serve();
+//如何处理$response需要针对不同框架对Symfony Response的支持区别对待
+//使用者的重心将集中到如何编写具体事件的callable
 ```
 
 ---

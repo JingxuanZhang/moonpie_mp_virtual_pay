@@ -69,23 +69,17 @@ class BasicClient extends BaseClient
 
         // Get post body and extract env from it
         $postBody = '';
-        $env = $this->getEnv();
 
         if (isset($options['body'])) {
             $postBody = $options['body'];
         } elseif (isset($options['json'])) {
             $postBody = json_encode($options['json'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            // Extract env from json body if present
-            if (isset($options['json']['env'])) {
-                $env = (int) $options['json']['env'];
-            }
         } elseif (isset($options['form_params'])) {
             $postBody = http_build_query($options['form_params']);
-            // Extract env from form_params if present
-            if (isset($options['form_params']['env'])) {
-                $env = (int) $options['form_params']['env'];
-            }
         }
+        unset($options['json'], $options['form_params']);
+        $options['body'] = $postBody;
+        //var_dump($postBody); exit;
 
         // Generate pay_sig for all requests
         $paySig = $this->generatePaySig($uriPath, $postBody, $appKey);
@@ -131,7 +125,7 @@ class BasicClient extends BaseClient
     protected function generatePaySig($uri, $postBody, $appKey)
     {
         $needSignMsg = $uri . '&' . $postBody;
-        return hash_hmac('sha256', $needSignMsg, $appKey);
+        return hash_hmac('sha256', $needSignMsg, $appKey, false);
     }
 
     /**

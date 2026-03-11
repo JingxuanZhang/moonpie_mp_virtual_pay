@@ -57,7 +57,7 @@ class Client extends BasicClient
     public function startPublishGoods($publishItem, $env = null)
     {
         if ($env === null) {
-            $env = $this->app->config->get('virtual_pay.env', 0);
+            $env = $this->getEnv();
         }
 
         $params = [
@@ -77,7 +77,7 @@ class Client extends BasicClient
     public function queryPublishGoods($env = null)
     {
         if ($env === null) {
-            $env = $this->app->config->get('virtual_pay.env', 0);
+            $env = $this->getEnv();
         }
 
         $params = [
@@ -87,3 +87,4 @@ class Client extends BasicClient
         return $this->httpPostJson('https://api.weixin.qq.com/xpay/query_publish_goods', $params);
     }
 }
+

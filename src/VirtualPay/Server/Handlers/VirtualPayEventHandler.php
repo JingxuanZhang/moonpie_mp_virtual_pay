@@ -80,7 +80,7 @@ class VirtualPayEventHandler implements EventHandlerInterface
 
         // Dispatch the event
         if (isset($event)) {
-            $this->eventDispatcher->dispatch($event, get_class($event));
+            $this->eventDispatcher->dispatch($event, $eventType);
         }
 
         // Return success response as required by WeChat
@@ -131,4 +131,3 @@ class VirtualPayEventHandler implements EventHandlerInterface
         return new ComplaintFiledEvent($message);
     }
 }
-
