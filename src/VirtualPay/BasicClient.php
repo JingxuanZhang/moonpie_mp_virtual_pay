@@ -34,7 +34,7 @@ class BasicClient extends BaseClient
      * @param array|null $params
      * @return int
      */
-    protected function getEnv($params = null)
+    public function getEnv($params = null)
     {
         if ($params !== null && isset($params['env'])) {
             return (int) $params['env'];
@@ -214,8 +214,9 @@ class BasicClient extends BaseClient
         $uriWxApi = 'requestVirtualPayment';
         $postBody = json_encode($signData);
         $appKey = $this->getEnvAppKey($signData);
-        $json['pigSign'] = $this->generatePaySig($uriWxApi, $postBody, $appKey);
+        $json['paySig'] = $this->generatePaySig($uriWxApi, $postBody, $appKey);
         $json['signature'] = $this->generateSignature($postBody, $sessionKey);
+        $json['signData'] = $postBody;
 
         return $json;
     }
