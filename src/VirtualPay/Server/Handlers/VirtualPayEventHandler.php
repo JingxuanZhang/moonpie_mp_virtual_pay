@@ -4,7 +4,10 @@ namespace Moonpie\EasyWechat\VirtualPay\Server\Handlers;
 
 use EasyWeChat\Kernel\Contracts\EventHandlerInterface;
 use EasyWeChat\Kernel\Exceptions\BadRequestException;
+use EasyWeChat\Kernel\Messages\Raw;
+use EasyWeChat\Kernel\ServiceContainer;
 use EasyWeChat\Kernel\Support\Arr;
+use EasyWeChat\Kernel\Support\XML;
 use Moonpie\EasyWechat\VirtualPay\Event\ComplaintFiledEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\CoinPaidEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\GoodsDeliveredEvent;
@@ -24,14 +27,19 @@ class VirtualPayEventHandler implements EventHandlerInterface
      * @var EventDispatcherInterface
      */
     protected $eventDispatcher;
+    /**
+     * @var ServiceContainer
+     */
+    protected $app;
 
     /**
      * Create a new VirtualPayEventHandler instance.
      *
      * @param EventDispatcherInterface $eventDispatcher
      */
-    public function __construct(EventDispatcherInterface $eventDispatcher)
+    public function __construct(EventDispatcherInterface $eventDispatcher, $app)
     {
+        $this->app = $app;
         $this->eventDispatcher = $eventDispatcher;
     }
 
@@ -80,11 +88,22 @@ class VirtualPayEventHandler implements EventHandlerInterface
 
         // Dispatch the event
         if (isset($event)) {
-            $this->eventDispatcher->dispatch($event, $eventType);
+            $final = $this->eventDispatcher->dispatch($event, $eventType);
+            $response = $final->getResponse();
+        } else {
+            // Return success response as required by WeChat
+            $response = ['ErrCode' => 0, 'ErrMsg' => 'success'];
         }
-
-        // Return success response as required by WeChat
-        return ['ErrCode' => 0, 'ErrMsg' => 'success'];
+        return $this->formatResponse($response);
+    }
+    protected function formatResponse(array $response)
+    {
+        if ($this->app->request->getContentType() == 'json') {
+            $contents = json_encode($response);
+        } else {
+            $contents = XML::build($response);
+        }
+        return new Raw($contents);
     }
 
     /**

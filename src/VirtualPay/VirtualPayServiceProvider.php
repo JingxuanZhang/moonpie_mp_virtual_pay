@@ -54,8 +54,8 @@ class VirtualPayServiceProvider implements ServiceProviderInterface
             return new Bill\Client($app);
         };
 
-        // Register event handler
-        $this->registerEventHandler($app);
+        // Register event handler, ignore
+        //$this->registerEventHandler($app);
     }
 
     /**
@@ -73,19 +73,18 @@ class VirtualPayServiceProvider implements ServiceProviderInterface
                         $eventType = $message['Event'];
                         if (in_array($eventType, [
                             'xpay_goods_deliver_notify',
-                            'xpay_coin_pay_notify', 
+                            'xpay_coin_pay_notify',
                             'xpay_refund_notify',
                             'xpay_complaint_notify'
                         ])) {
-                            $handler = new VirtualPayEventHandler($app['events']);
+                            $handler = new VirtualPayEventHandler($app['events'], $app);
                             return $handler->handle($message);
                         }
                     }
-                    
+
                     return null;
                 }
             );
         }
     }
 }
-
