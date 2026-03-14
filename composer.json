@@ -1,15 +1,19 @@
 {
     "name": "moonpie/mp-virtual-pay",
+    "version": "1.0.0",
     "description": "WeChat Mini Program Virtual Payment for EasyWeChat",
     "keywords": ["wechat", "mini-program", "virtual-payment", "easywechat"],
-    "homepage": "https://github.com/moonpie/mp-virtual-pay",
+    "homepage": "https://github.com/JingxuanZhang/moonpie_mp_virtual_pay",
     "license": "MIT",
     "authors": [
         {
-            "name": "Moonpie",
-            "email": "moonpie@example.com"
+            "name": "johnzhang",
+            "email": "875010341@qq.com"
         }
     ],
+    "conflict": {
+        "w7corp/easywechat": ">=6"
+    },
     "require": {
         "php": ">=7.2",
         "overtrue/wechat": "^4.0"

@@ -12,7 +12,33 @@ use Pimple\Container;
 class Client extends BasicClient
 {
     /**
-     * Query order by order_id or wx_order_id.
+     * Query order by wx_order_id
+     *
+     * @param string $orderId
+     * @param string $openid
+     * @param int|null $env
+     * @return array|\EasyWeChat\Kernel\Support\Collection|object|string
+     */
+    public function queryWxOrder($orderId, $openid, $env = null)
+    {
+        $env = $env ?? $this->getEnv();
+
+        $data = [
+            'openid' => $openid,
+            'env' => $env,
+        ];
+
+        $data['wx_order_id'] = $orderId;
+
+        $response = $this->httpPostJson(
+            'https://api.weixin.qq.com/xpay/query_order',
+            $data
+        );
+
+        return $response;
+    }
+    /**
+     * Query order by order_id
      *
      * @param string $orderId
      * @param string $openid
@@ -22,24 +48,19 @@ class Client extends BasicClient
     public function queryOrder($orderId, $openid, $env = null)
     {
         $env = $env ?? $this->getEnv();
-        
+
         $data = [
             'openid' => $openid,
             'env' => $env,
         ];
-        
-        // Use order_id or wx_order_id (at least one must be provided)
-        if (strpos($orderId, 'wx_') === 0) {
-            $data['wx_order_id'] = $orderId;
-        } else {
-            $data['order_id'] = $orderId;
-        }
-        
+
+        $data['order_id'] = $orderId;
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/query_order',
             $data
         );
-        
+
         return $response;
     }
 
@@ -54,23 +75,23 @@ class Client extends BasicClient
     public function notifyProvideGoods($orderId, $wxOrderId = null, $env = null)
     {
         $env = $env ?? $this->getEnv();
-        
+
         $data = [
             'env' => $env,
         ];
-        
+
         // Use order_id or wx_order_id (at least one must be provided)
         if ($wxOrderId !== null) {
             $data['wx_order_id'] = $wxOrderId;
         } else {
             $data['order_id'] = $orderId;
         }
-        
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/notify_provide_goods',
             $data
         );
-        
+
         return $response;
     }
 
@@ -83,7 +104,7 @@ class Client extends BasicClient
     public function refundOrder($params)
     {
         $env = $this->getEnv($params);
-        
+
         $data = [
             'openid' => Arr::get($params, 'openid'),
             'env' => $env,
@@ -94,19 +115,20 @@ class Client extends BasicClient
             'refund_reason' => (string) Arr::get($params, 'refund_reason', '0'),
             'req_from' => (string) Arr::get($params, 'req_from', '1'),
         ];
-        
+
         // Add order_id or wx_order_id (at least one must be provided)
         if (Arr::has($params, 'wx_order_id')) {
             $data['wx_order_id'] = Arr::get($params, 'wx_order_id');
         } else {
             $data['order_id'] = Arr::get($params, 'order_id');
         }
-        
+
         $response = $this->httpPostJson(
             'https://api.weixin.qq.com/xpay/refund_order',
             $data
         );
-        
+
         return $response;
     }
 }
+

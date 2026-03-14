@@ -65,7 +65,8 @@ $presentResult = $miniProgram->virtual_pay_currency->presentCurrency([
 ]);
 
 // 5. 查询订单
-$order = $miniProgram->virtual_pay_order->queryOrder('order-123');
+$order = $miniProgram->virtual_pay_order->queryOrder('order-123');//使用商家订单号
+$order = $miniProgram->virtual_pay_order->queryWxOrder('wx-order-123');//使用微信订单号
 
 // 6. 退款
 $refund = $miniProgram->virtual_pay_order->refundOrder([
@@ -104,6 +105,9 @@ $app->server->push($handler, Message::EVENT);
 $response = $app->server->serve();
 //如何处理$response需要针对不同框架对Symfony Response的支持区别对待
 //使用者的重心将集中到如何编写具体事件的callable
+//其中callback中的返回数据是该$event, 使用以下方法来生成微信要求的response
+return $event->markOk();//返回正常
+return $event->markFail(reason);//返回错误
 ```
 
 ---
