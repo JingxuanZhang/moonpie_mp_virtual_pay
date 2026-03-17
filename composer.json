@@ -1,6 +1,5 @@
 {
     "name": "moonpie/mp-virtual-pay",
-    "version": "1.0.0",
     "description": "WeChat Mini Program Virtual Payment for EasyWeChat",
     "keywords": ["wechat", "mini-program", "virtual-payment", "easywechat"],
     "homepage": "https://github.com/JingxuanZhang/moonpie_mp_virtual_pay",
@@ -31,8 +30,6 @@
             "Moonpie\\EasyWechat\\VirtualPay\\Tests\\": "tests/VirtualPay/"
         }
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "config": {
         "sort-packages": true,
         "allow-plugins": {
