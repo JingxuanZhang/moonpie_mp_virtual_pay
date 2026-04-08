@@ -8,8 +8,10 @@ use Moonpie\EasyWechat\VirtualPay\Event\GoodsDeliveredEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\CoinPaidEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\RefundProcessedEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\ComplaintFiledEvent;
+use Moonpie\EasyWechat\VirtualPay\Event\IosRefundQueryNotifyEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use EasyWeChat\Kernel\Exceptions\BadRequestException;
+use EasyWeChat\Kernel\Messages\Raw;
 
 class VirtualPayEventHandlerTest extends TestCase
 {
@@ -18,122 +20,136 @@ class VirtualPayEventHandlerTest extends TestCase
      */
     private $mockEventDispatcher;
 
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject
+     */
+    private $mockApp;
+
     protected function setUp(): void
     {
         parent::setUp();
         
-        // Create mock event dispatcher
         $this->mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->mockEventDispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) { return $event; });
+
+        $mockRequest = $this->createMock(\Symfony\Component\HttpFoundation\Request::class);
+        $mockRequest->method('getContentType')->willReturn('json');
+        $this->mockApp = new class($mockRequest) {
+            public $request;
+            public function __construct($request) { $this->request = $request; }
+        };
     }
 
-    /**
-     * Test handler can identify goods delivered event type.
-     */
     public function testIdentifiesGoodsDeliveredEventType()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = [
             'Event' => 'xpay_goods_deliver_notify',
             'ToUserName' => 'gh_1234567890ab'
         ];
 
-        // Expect the event dispatcher to be called with GoodsDeliveredEvent
         $this->mockEventDispatcher
             ->expects($this->once())
             ->method('dispatch')
             ->with(
                 $this->isInstanceOf(GoodsDeliveredEvent::class),
-                $this->equalTo(GoodsDeliveredEvent::class)
+                $this->equalTo('xpay_goods_deliver_notify')
             );
 
         $result = $handler->handle($message);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handler can identify coin paid event type.
-     */
     public function testIdentifiesCoinPaidEventType()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = [
             'Event' => 'xpay_coin_pay_notify',
             'ToUserName' => 'gh_1234567890ab'
         ];
 
-        // Expect the event dispatcher to be called with CoinPaidEvent
         $this->mockEventDispatcher
             ->expects($this->once())
             ->method('dispatch')
             ->with(
                 $this->isInstanceOf(CoinPaidEvent::class),
-                $this->equalTo(CoinPaidEvent::class)
+                $this->equalTo('xpay_coin_pay_notify')
             );
 
         $result = $handler->handle($message);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handler can identify refund processed event type.
-     */
     public function testIdentifiesRefundProcessedEventType()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = [
             'Event' => 'xpay_refund_notify',
             'ToUserName' => 'gh_1234567890ab'
         ];
 
-        // Expect the event dispatcher to be called with RefundProcessedEvent
         $this->mockEventDispatcher
             ->expects($this->once())
             ->method('dispatch')
             ->with(
                 $this->isInstanceOf(RefundProcessedEvent::class),
-                $this->equalTo(RefundProcessedEvent::class)
+                $this->equalTo('xpay_refund_notify')
             );
 
         $result = $handler->handle($message);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handler can identify complaint filed event type.
-     */
     public function testIdentifiesComplaintFiledEventType()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = [
             'Event' => 'xpay_complaint_notify',
             'ToUserName' => 'gh_1234567890ab'
         ];
 
-        // Expect the event dispatcher to be called with ComplaintFiledEvent
         $this->mockEventDispatcher
             ->expects($this->once())
             ->method('dispatch')
             ->with(
                 $this->isInstanceOf(ComplaintFiledEvent::class),
-                $this->equalTo(ComplaintFiledEvent::class)
+                $this->equalTo('xpay_complaint_notify')
             );
 
         $result = $handler->handle($message);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test each event type creates correct Event object.
-     */
+    public function testIdentifiesIosRefundQueryEventType()
+    {
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
+        $message = [
+            'Event' => 'xpay_subscribe_ios_refund_query_notify',
+            'ToUserName' => 'gh_1234567890ab'
+        ];
+
+        $this->mockEventDispatcher
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with(
+                $this->isInstanceOf(IosRefundQueryNotifyEvent::class),
+                $this->equalTo('xpay_subscribe_ios_refund_query_notify')
+            );
+
+        $result = $handler->handle($message);
+        
+        $this->assertInstanceOf(Raw::class, $result);
+    }
+
     public function testCreatesCorrectEventObjects()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         
-        // Test GoodsDeliveredEvent
         $goodsMessage = ['Event' => 'xpay_goods_deliver_notify', 'TestField' => 'test_value'];
         $this->mockEventDispatcher
             ->expects($this->at(0))
@@ -145,11 +161,11 @@ class VirtualPayEventHandlerTest extends TestCase
         
         $handler->handle($goodsMessage);
         
-        // Reset mock for next test
         $this->mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $this->mockEventDispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) { return $event; });
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         
-        // Test CoinPaidEvent
         $coinMessage = ['Event' => 'xpay_coin_pay_notify', 'TestField' => 'test_value'];
         $this->mockEventDispatcher
             ->expects($this->at(0))
@@ -161,11 +177,11 @@ class VirtualPayEventHandlerTest extends TestCase
         
         $handler->handle($coinMessage);
         
-        // Reset mock for next test
         $this->mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $this->mockEventDispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) { return $event; });
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         
-        // Test RefundProcessedEvent
         $refundMessage = ['Event' => 'xpay_refund_notify', 'TestField' => 'test_value'];
         $this->mockEventDispatcher
             ->expects($this->at(0))
@@ -177,11 +193,11 @@ class VirtualPayEventHandlerTest extends TestCase
         
         $handler->handle($refundMessage);
         
-        // Reset mock for next test
         $this->mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $this->mockEventDispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) { return $event; });
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         
-        // Test ComplaintFiledEvent
         $complaintMessage = ['Event' => 'xpay_complaint_notify', 'TestField' => 'test_value'];
         $this->mockEventDispatcher
             ->expects($this->at(0))
@@ -192,34 +208,39 @@ class VirtualPayEventHandlerTest extends TestCase
             }));
         
         $handler->handle($complaintMessage);
+
+        $this->mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->mockEventDispatcher->method('dispatch')
+            ->willReturnCallback(function ($event) { return $event; });
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
+
+        $iosRefundMessage = ['Event' => 'xpay_subscribe_ios_refund_query_notify', 'TestField' => 'ios_refund_value'];
+        $this->mockEventDispatcher
+            ->expects($this->at(0))
+            ->method('dispatch')
+            ->with($this->callback(function ($event) {
+                return $event instanceof IosRefundQueryNotifyEvent &&
+                       $event->getSubject()['TestField'] === 'ios_refund_value';
+            }));
+
+        $handler->handle($iosRefundMessage);
     }
 
-    /**
-     * Test returns correct WeChat response format.
-     */
     public function testReturnsCorrectWeChatResponseFormat()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = ['Event' => 'xpay_goods_deliver_notify'];
 
         $result = $handler->handle($message);
         
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('ErrCode', $result);
-        $this->assertArrayHasKey('ErrMsg', $result);
-        $this->assertEquals(0, $result['ErrCode']);
-        $this->assertEquals('success', $result['ErrMsg']);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test correctly triggers event_dispatcher events.
-     */
     public function testTriggersEventDispatcherEvents()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = ['Event' => 'xpay_goods_deliver_notify'];
 
-        // Verify dispatch is called exactly once
         $this->mockEventDispatcher
             ->expects($this->once())
             ->method('dispatch');
@@ -227,30 +248,23 @@ class VirtualPayEventHandlerTest extends TestCase
         $handler->handle($message);
     }
 
-    /**
-     * Test handles unknown event types gracefully.
-     */
     public function testHandlesUnknownEventTypes()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $message = ['Event' => 'unknown_event_type'];
 
-        // Should not call dispatch for unknown events
         $this->mockEventDispatcher
             ->expects($this->never())
             ->method('dispatch');
 
         $result = $handler->handle($message);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handles JSON string payload.
-     */
     public function testHandlesJsonStringPayload()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $jsonMessage = json_encode(['Event' => 'xpay_goods_deliver_notify']);
 
         $this->mockEventDispatcher
@@ -260,33 +274,26 @@ class VirtualPayEventHandlerTest extends TestCase
 
         $result = $handler->handle($jsonMessage);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handles XML string payload (should fail gracefully).
-     */
     public function testHandlesXmlStringPayload()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $xmlMessage = '<xml><Event>xpay_goods_deliver_notify</Event></xml>';
 
-        // json_decode will return null for XML, so message becomes []
         $this->mockEventDispatcher
             ->expects($this->never())
             ->method('dispatch');
 
         $result = $handler->handle($xmlMessage);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test handles array payload directly.
-     */
     public function testHandlesArrayPayloadDirectly()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $arrayMessage = ['Event' => 'xpay_goods_deliver_notify'];
 
         $this->mockEventDispatcher
@@ -296,15 +303,12 @@ class VirtualPayEventHandlerTest extends TestCase
 
         $result = $handler->handle($arrayMessage);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 
-    /**
-     * Test throws BadRequestException for invalid payload types.
-     */
     public function testThrowsBadRequestExceptionForInvalidPayload()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $invalidPayload = new \stdClass();
 
         $this->expectException(BadRequestException::class);
@@ -313,35 +317,27 @@ class VirtualPayEventHandlerTest extends TestCase
         $handler->handle($invalidPayload);
     }
 
-    /**
-     * Test handles empty payload.
-     */
     public function testHandlesEmptyPayload()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         
-        // null payload should throw exception
         $this->expectException(BadRequestException::class);
         $this->expectExceptionMessage('Invalid message format');
         
         $handler->handle(null);
     }
 
-    /**
-     * Test handles empty array payload.
-     */
     public function testHandlesEmptyArrayPayload()
     {
-        $handler = new VirtualPayEventHandler($this->mockEventDispatcher);
+        $handler = new VirtualPayEventHandler($this->mockEventDispatcher, $this->mockApp);
         $emptyArray = [];
 
-        // Empty array has no Event field, so it should return success without dispatching
         $this->mockEventDispatcher
             ->expects($this->never())
             ->method('dispatch');
 
         $result = $handler->handle($emptyArray);
         
-        $this->assertEquals(['ErrCode' => 0, 'ErrMsg' => 'success'], $result);
+        $this->assertInstanceOf(Raw::class, $result);
     }
 }

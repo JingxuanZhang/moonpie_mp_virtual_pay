@@ -100,6 +100,7 @@ $dispatcher->addListener('xpay_goods_deliver_notify', callable(Event\GoodsDelive
 $dispatcher->addListener('xpay_coin_pay_notify', callable(Event\CoinPaidEvent $event));//代币支付推送
 $dispatcher->addListener('xpay_refund_notify', callable(Event\RefundProcessedEvent $event));//退款推送
 $dispatcher->addListener('xpay_complaint_notify', callable(Event\ComplaintFiledEvent $event));//用户投诉推送
+$dispatcher->addListener('xpay_subscribe_ios_refund_query_notify', callable(Event\IosRefundQueryNotifyEvent $event));//iOS退款问询推送
 $handler = new Moonpie\EasyWechat\VirtualPay\Server\Handlers\VirtualPayEventHandler($dispatcher, $app);
 $app->server->push($handler, Message::EVENT);
 $response = $app->server->serve();
@@ -109,6 +110,41 @@ $response = $app->server->serve();
 return $event->markOk();//返回正常
 return $event->markFail(reason);//返回错误
 ```
+
+### iOS 退款问询处理
+
+当 Apple 支付用户申请退款时，微信会向开发者发送退款问询通知（`xpay_subscribe_ios_refund_query_notify`），开发者需要在 3 秒内应答，否则微信会返回「不确定」给 Apple。
+
+```php
+use Moonpie\EasyWechat\VirtualPay\Event\IosRefundQueryNotifyEvent;
+
+$dispatcher->addListener('xpay_subscribe_ios_refund_query_notify', function (IosRefundQueryNotifyEvent $event) {
+    // 获取问询信息
+    $refundTime = $event->getRefundTime();           // 问询时间(Unix时间戳)
+    $orderTime = $event->getOrderTime();             // 原订单时间(Unix时间戳)
+    $channelBill = $event->getChannelBill();         // Apple票据号
+    $bundleId = $event->getBundleId();               // Apple bundleid
+    $productId = $event->getProductId();             // 道具ID
+    $pCount = $event->getPCount();                   // 道具/代币数量
+    $refundReason = $event->getRefundRequestReason();// 用户退款原因
+    $provideStatus = $event->getProvideStatus();     // 发货状态: 0-未发货 1-已发货 2-发货中
+    $payOrderId = $event->getPayOrderId();           // 退款对应支付订单号
+
+    // 根据业务策略决定是否同意退款
+    if ($provideStatus === 0) {
+        // 未发货，同意退款
+        $event->approveRefund('订单未发货，同意退款', '未发货');
+    } else {
+        // 已发货，拒绝退款
+        $event->rejectRefund('道具已消耗，无法退款', '已消耗');
+    }
+});
+```
+
+**响应方法：**
+- `$event->approveRefund(string $evidence, string $resultInfo = '')` - 同意退款（result_code=0）
+- `$event->rejectRefund(string $evidence, string $resultInfo = '')` - 拒绝退款（result_code=1）
+- `$evidence` 为必填参数，用于退款审计
 
 ---
 

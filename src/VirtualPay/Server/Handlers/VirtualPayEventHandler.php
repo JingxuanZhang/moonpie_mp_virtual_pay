@@ -11,6 +11,7 @@ use EasyWeChat\Kernel\Support\XML;
 use Moonpie\EasyWechat\VirtualPay\Event\ComplaintFiledEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\CoinPaidEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\GoodsDeliveredEvent;
+use Moonpie\EasyWechat\VirtualPay\Event\IosRefundQueryNotifyEvent;
 use Moonpie\EasyWechat\VirtualPay\Event\RefundProcessedEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -81,9 +82,11 @@ class VirtualPayEventHandler implements EventHandlerInterface
             case 'xpay_complaint_notify':
                 $event = $this->handleComplaintFiled($message);
                 break;
+            case 'xpay_subscribe_ios_refund_query_notify':
+                $event = $this->handleIosRefundQuery($message);
+                break;
             default:
-                // Unknown event type, return success to avoid retries
-                return ['ErrCode' => 0, 'ErrMsg' => 'success'];
+                return $this->formatResponse(['ErrCode' => 0, 'ErrMsg' => 'success']);
         }
 
         // Dispatch the event
@@ -148,5 +151,16 @@ class VirtualPayEventHandler implements EventHandlerInterface
     protected function handleComplaintFiled(array $message): ComplaintFiledEvent
     {
         return new ComplaintFiledEvent($message);
+    }
+
+    /**
+     * Handle iOS refund query notify event.
+     *
+     * @param array $message
+     * @return IosRefundQueryNotifyEvent
+     */
+    protected function handleIosRefundQuery(array $message): IosRefundQueryNotifyEvent
+    {
+        return new IosRefundQueryNotifyEvent($message);
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Moonpie\EasyWechat\VirtualPay\Event;
 
-use Symfony\Component\EventDispatcher\GenericEvent;
 use EasyWeChat\Kernel\Support\Arr;
 
 /**
@@ -10,68 +9,8 @@ use EasyWeChat\Kernel\Support\Arr;
  *
  * Triggered when coin payment is processed.
  */
-class CoinPaidEvent extends GenericEvent
+class CoinPaidEvent extends CommonEvent
 {
-    /**
-     * Create a new CoinPaidEvent instance.
-     *
-     * @param array $message The raw message data from WeChat
-     */
-    public function __construct(array $message)
-    {
-        parent::__construct($message);
-    }
-
-    /**
-     * Get the ToUserName (mini program original ID).
-     *
-     * @return string
-     */
-    public function getToUserName(): string
-    {
-        return Arr::get($this->subject, 'ToUserName', '');
-    }
-
-    /**
-     * Get the FromUserName (WeChat official openid).
-     *
-     * @return string
-     */
-    public function getFromUserName(): string
-    {
-        return Arr::get($this->subject, 'FromUserName', '');
-    }
-
-    /**
-     * Get the CreateTime (message creation timestamp).
-     *
-     * @return int
-     */
-    public function getCreateTime(): int
-    {
-        return (int) Arr::get($this->subject, 'CreateTime', 0);
-    }
-
-    /**
-     * Get the MsgType.
-     *
-     * @return string
-     */
-    public function getMsgType(): string
-    {
-        return Arr::get($this->subject, 'MsgType', '');
-    }
-
-    /**
-     * Get the Event type.
-     *
-     * @return string
-     */
-    public function getEvent(): string
-    {
-        return Arr::get($this->subject, 'Event', '');
-    }
-
     /**
      * Get the AppId.
      *
@@ -80,16 +19,6 @@ class CoinPaidEvent extends GenericEvent
     public function getAppId(): string
     {
         return Arr::get($this->subject, 'AppId', '');
-    }
-
-    /**
-     * Get the OpenId.
-     *
-     * @return string
-     */
-    public function getOpenId(): string
-    {
-        return Arr::get($this->subject, 'OpenId', '');
     }
 
     /**
